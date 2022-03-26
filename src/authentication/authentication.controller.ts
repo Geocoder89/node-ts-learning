@@ -33,6 +33,7 @@ class AuthenticationController implements Controller {
         this.router.post(`${this.path}/register`,validationMiddleware(CreateUserDto),this.registration)
 
         this.router.post(`${this.path}/login`,validationMiddleware(LoginDto),this.loggingIn)
+        this.router.post(`${this.path}/logout`,this.loggingOut)
     }
 
     private registration = async(req: express.Request,res: express.Response,next: express.NextFunction)=> {
@@ -72,7 +73,7 @@ class AuthenticationController implements Controller {
                // we then create a token for the user and attach cookies for each request made by the authorized user.
 
             const tokenData = this.createToken(user)
-            res.setHeader('Set-Cookie',[this.createCookie(tokenData)])
+            res.setHeader('Set-Cookie', [this.createCookie(tokenData)]);
                res.status(200).json({
                     success: true,
                     message: 'successfully logged in',
@@ -81,14 +82,24 @@ class AuthenticationController implements Controller {
            } else {
                next (new WrongCredentialsException())
            }
+       } else {
+           next(new WrongCredentialsException())
        }
     }
 
-    private createCookie(tokenData: TokenData) {
-        return `Authorization=${tokenData.token} HttpOnly;
-        Max-Age=${tokenData.expiresIn}`; 
-       
+    private loggingOut = (req: express.Request,res: express.Response,next: express.NextFunction)=> {
+        res.setHeader('Set-Cookie',['Authorization=;Max-age=0'])
+
+        res.status(200).json({
+            success: true,
+            message: 'Logged out successfully',
+            data: {}
+        })
     }
+
+    private createCookie(tokenData: TokenData) {
+        return `Authorization=${tokenData.token}; HttpOnly; Max-Age=${tokenData.expiresIn}`;
+      }
 
 
     private createToken(user: User) {
